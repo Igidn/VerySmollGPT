@@ -193,4 +193,3 @@ MIT
 
 - Architecture inspired by [Andrej Karpathy's nanoGPT](https://github.com/karpathy/nanoGPT)
 - Dataset: [TinyStories by Ronen Eldan and Yuanzhi Li](https://huggingface.co/datasets/roneneldan/TinyStories)
-- Built for educational purposes and Raspberry Pi deployment
