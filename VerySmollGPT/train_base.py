@@ -299,7 +299,7 @@ def main():
         'n_layers': 6,      
         'n_heads': 8,      
         'd_ff': 1024,     
-        'max_seq_len': 256,
+        'max_seq_len': 128,
         'dropout': 0.1,
         
         # Training
@@ -312,7 +312,7 @@ def main():
         'max_batches_per_epoch': 130_000,
         
         # Data
-        'block_size': 256,  # Context window
+        'block_size': 128,  # Context window
         'train_split': 0.9,
         
         # Logging
