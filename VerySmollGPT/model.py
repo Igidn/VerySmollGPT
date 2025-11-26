@@ -338,17 +338,13 @@ class VerySmollGPT(nn.Module):
 
 
 def create_model(vocab_size):
-    """
-    Create VerySmollGPT model with default architecture
-    """
     model = VerySmollGPT(
         vocab_size=vocab_size,
-        d_model=128,
-        n_layers=4,
-        n_heads=4,
-        d_ff=512,
+        d_model=256,      
+        n_layers=6,
+        n_heads=8,
+        d_ff=1024,
         max_seq_len=128,
         dropout=0.1
     )
     return model
-

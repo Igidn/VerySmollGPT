@@ -289,18 +289,17 @@ def main():
     
     # Configuration
     config = {
-        # Model
-        'vocab_size': 102,  # Updated from tokenizer
-        'd_model': 128,
-        'n_layers': 4,
-        'n_heads': 4,
-        'd_ff': 512,
+        'vocab_size': 102,  
+        'd_model': 256,      
+        'n_layers': 6,      
+        'n_heads': 8,      
+        'd_ff': 1024,     
         'max_seq_len': 128,
         'dropout': 0.1,
         
         # Training
         'num_epochs': 5,
-        'batch_size': 24,
+        'batch_size': 16,   
         'learning_rate': 3e-4,
         'min_learning_rate': 1e-4,
         'weight_decay': 0.01,

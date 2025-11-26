@@ -5,11 +5,11 @@ A lightweight character-level GPT model designed to run on Raspberry Pi and othe
 ## Architecture
 
 - **Model**: Decoder-only Transformer (GPT-style)
-- **Parameters**: ~3M
-- **Layers**: 4
-- **Attention Heads**: 4
-- **Embedding Dimension**: 128
-- **Feed-forward Dimension**: 512
+- **Parameters**: ~3-5M
+- **Layers**: 6
+- **Attention Heads**: 8
+- **Embedding Dimension**: 256
+- **Feed-forward Dimension**: 1024
 - **Context Window**: 128 tokens
 - **Tokenizer**: Character-level
 - **Vocabulary Size**: 102 unique characters
@@ -49,8 +49,8 @@ pip install numpy
 
 The model is trained on the [TinyStories dataset](https://huggingface.co/datasets/roneneldan/TinyStories) - a collection of short stories generated to help small language models learn coherent text generation.
 
-- **Dataset size**: 20MB (optimized for Raspberry Pi)
-- **Total tokens**: ~21M characters
+- **Dataset size**: 50MB (optimized for quality while remaining manageable on Raspberry Pi)
+- **Total tokens**: ~50M characters
 
 ## Training
 
@@ -68,7 +68,7 @@ Edit the `config` dictionary in `train_base.py`:
 ```python
 config = {
     'num_epochs': 5,           # 2-5 epochs recommended
-    'batch_size': 24,          # Adjust based on RAM (16-32)
+    'batch_size': 16,          # Adjusted for larger model
     'learning_rate': 3e-4,     # Initial LR
     'min_learning_rate': 1e-4, # Final LR (cosine decay)
     'max_seq_len': 128,        # Context window
@@ -133,9 +133,9 @@ The model generates simple, coherent short stories in the style of the TinyStori
 ## Raspberry Pi Optimization
 
 ### Memory Usage
-- **Model size**: ~12 MB (float32)
-- **Training RAM**: ~500 MB - 1 GB (batch_size=16)
-- **Inference RAM**: ~100 MB
+- **Model size**: ~12-16 MB (float32)
+- **Training RAM**: ~1-2 GB (batch_size=16)
+- **Inference RAM**: ~200-300 MB
 
 ### Tips for Raspberry Pi
 1. **Reduce batch size** if out of memory: `batch_size=8` or `batch_size=16`
