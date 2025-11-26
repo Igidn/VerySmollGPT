@@ -1,0 +1,11 @@
+# VerySmollGPT Requirements
+
+# Core dependencies
+torch>=2.0.0
+numpy>=1.24.0
+
+# For data processing
+datasets>=2.0.0
+
+# Optional: for progress bars and utilities
+tqdm>=4.65.0
