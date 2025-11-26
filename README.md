@@ -29,8 +29,7 @@ VerySmollGPT/
 │   ├── generate.py           # Inference script
 │   └── data.txt              # Raw text data (20MB)
 ├── Data-scaping/
-│   └── main.py               # Script to download TinyStories
-└── ArchitecturePlan.md       # Model specifications
+    └── main.py               # Script to download TinyStories
 ```
 
 ## Requirements
