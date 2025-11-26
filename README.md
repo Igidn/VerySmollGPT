@@ -22,7 +22,7 @@ VerySmollGPT/
 │   ├── tokenized_data.npy    # Preprocessed training data
 │   ├── tokenizer.pkl          # Tokenizer (binary)
 │   └── tokenizer.json         # Tokenizer (readable)
-├── VerySmollGPT/
+└── VerySmollGPT/
     ├── model.py              # Model architecture
     ├── tokenizer.py          # Character-level tokenizer
     ├── train_base.py         # Training script
