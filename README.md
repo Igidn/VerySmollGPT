@@ -49,8 +49,8 @@ pip install numpy
 
 The model is trained on the [TinyStories dataset](https://huggingface.co/datasets/roneneldan/TinyStories) - a collection of short stories generated to help small language models learn coherent text generation.
 
-- **Dataset size**: 50MB (optimized for quality while remaining manageable on Raspberry Pi)
-- **Total tokens**: ~50M characters
+- **Dataset size**: 25MB (optimized for Raspberry Pi training time)
+- **Total tokens**: ~25M characters
 
 ## Training
 

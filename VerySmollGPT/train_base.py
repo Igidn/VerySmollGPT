@@ -150,6 +150,11 @@ class Trainer:
                       f"Loss: {avg_loss:.4f} | "
                       f"LR: {lr:.6f} | "
                       f"Time: {elapsed:.1f}s")
+            
+            # Limit batches per epoch if specified
+            if 'max_batches_per_epoch' in self.config and (batch_idx + 1) >= self.config['max_batches_per_epoch']:
+                print(f"Reached max batches per epoch ({self.config['max_batches_per_epoch']}). Stopping epoch.")
+                break
         
         avg_loss = total_loss / num_batches
         return avg_loss
@@ -294,7 +299,7 @@ def main():
         'n_layers': 6,      
         'n_heads': 8,      
         'd_ff': 1024,     
-        'max_seq_len': 128,
+        'max_seq_len': 256,
         'dropout': 0.1,
         
         # Training
@@ -304,9 +309,10 @@ def main():
         'min_learning_rate': 1e-4,
         'weight_decay': 0.01,
         'grad_clip': 1.0,
+        'max_batches_per_epoch': 130_000,
         
         # Data
-        'block_size': 128,  # Context window
+        'block_size': 256,  # Context window
         'train_split': 0.9,
         
         # Logging
@@ -341,7 +347,16 @@ def main():
     
     # Create model
     print("\nCreating model...")
-    model = create_model(config['vocab_size'])
+    print("\nCreating model...")
+    model = create_model(
+        vocab_size=config['vocab_size'],
+        d_model=config['d_model'],
+        n_layers=config['n_layers'],
+        n_heads=config['n_heads'],
+        d_ff=config['d_ff'],
+        max_seq_len=config['max_seq_len'],
+        dropout=config['dropout']
+    )
     
     # Create trainer
     trainer = Trainer(model, train_dataset, val_dataset, config)

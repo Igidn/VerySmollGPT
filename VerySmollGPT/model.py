@@ -337,14 +337,14 @@ class VerySmollGPT(nn.Module):
         print("=" * 60)
 
 
-def create_model(vocab_size):
+def create_model(vocab_size, d_model=256, n_layers=6, n_heads=8, d_ff=1024, max_seq_len=128, dropout=0.1):
     model = VerySmollGPT(
         vocab_size=vocab_size,
-        d_model=256,      
-        n_layers=6,
-        n_heads=8,
-        d_ff=1024,
-        max_seq_len=128,
-        dropout=0.1
+        d_model=d_model,      
+        n_layers=n_layers,
+        n_heads=n_heads,
+        d_ff=d_ff,
+        max_seq_len=max_seq_len,
+        dropout=dropout
     )
     return model
