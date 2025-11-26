@@ -112,6 +112,8 @@ class Trainer:
         self.model.train()
         total_loss = 0
         num_batches = len(self.train_loader)
+        if 'max_batches_per_epoch' in self.config:
+            num_batches = min(num_batches, self.config['max_batches_per_epoch'])
         
         start_time = time.time()
         
@@ -303,7 +305,7 @@ def main():
         'dropout': 0.1,
         
         # Training
-        'num_epochs': 5,
+        'num_epochs': 3,
         'batch_size': 16,   
         'learning_rate': 3e-4,
         'min_learning_rate': 1e-4,
