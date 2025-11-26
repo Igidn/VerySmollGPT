@@ -88,7 +88,7 @@ class Trainer:
             batch_size=config['batch_size'],
             shuffle=True,
             num_workers=config['num_workers'],
-            pin_memory=True
+            pin_memory=False
         )
         
         self.val_loader = DataLoader(
@@ -96,7 +96,7 @@ class Trainer:
             batch_size=config['batch_size'],
             shuffle=False,
             num_workers=config['num_workers'],
-            pin_memory=True
+            pin_memory=False
         )
         
         # Training state
@@ -121,7 +121,12 @@ class Trainer:
             targets = targets.to(self.device)
             
             # Forward pass
-            loss, _ = self.model(inputs, targets)
+            # Forward pass with Mixed Precision
+            if self.config.get('use_amp', False):
+                with torch.amp.autocast(device_type='cpu', dtype=torch.bfloat16):
+                    loss, _ = self.model(inputs, targets)
+            else:
+                loss, _ = self.model(inputs, targets)
             
             # Backward pass
             self.optimizer.zero_grad()
@@ -310,6 +315,7 @@ def main():
         'weight_decay': 0.01,
         'grad_clip': 1.0,
         'max_batches_per_epoch': 130_000,
+        'use_amp': True, # Enable Mixed Precision
         
         # Data
         'block_size': 128,  # Context window
