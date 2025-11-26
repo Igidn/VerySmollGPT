@@ -23,11 +23,10 @@ VerySmollGPT/
 │   ├── tokenizer.pkl          # Tokenizer (binary)
 │   └── tokenizer.json         # Tokenizer (readable)
 ├── VerySmollGPT/
-│   ├── model.py              # Model architecture
-│   ├── tokenizer.py          # Character-level tokenizer
-│   ├── train_base.py         # Training script
-│   ├── generate.py           # Inference script
-│   └── data.txt              # Raw text data (20MB)
+    ├── model.py              # Model architecture
+    ├── tokenizer.py          # Character-level tokenizer
+    ├── train_base.py         # Training script
+    └── generate.py           # Inference script
 ```
 
 ## Requirements
