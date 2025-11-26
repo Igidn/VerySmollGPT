@@ -1,6 +1,8 @@
 # VerySmollGPT
 
-A lightweight character-level GPT model designed to train on Raspberry Pi
+A lightweight character-level GPT model designed to train on Raspberry Pi 
+
+(this shit gonna took about 9 days to train so yep no hf link)
 
 ## Architecture
 
