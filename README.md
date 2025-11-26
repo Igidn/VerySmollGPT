@@ -1,6 +1,6 @@
 # VerySmollGPT
 
-A lightweight character-level GPT model designed to run on Raspberry Pi and other resource-constrained devices.
+A lightweight character-level GPT model designed to train on Raspberry Pi
 
 ## Architecture
 
