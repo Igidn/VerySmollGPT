@@ -106,6 +106,16 @@ class Trainer:
         
         # Create checkpoint directory
         os.makedirs(config['checkpoint_dir'], exist_ok=True)
+        
+        # Setup logging
+        self.log_file = os.path.join(config['checkpoint_dir'], 'training_log.txt')
+        self.log(f"Logging to {self.log_file}")
+        
+    def log(self, message):
+        """Log message to console and file"""
+        print(message)
+        with open(self.log_file, "a") as f:
+            f.write(message + "\n")
     
     def train_epoch(self):
         """Train for one epoch"""
@@ -147,7 +157,7 @@ class Trainer:
                 elapsed = time.time() - start_time
                 lr = self.optimizer.param_groups[0]['lr']
                 
-                print(f"Epoch: {self.current_epoch + 1}/{self.config['num_epochs']} | "
+                self.log(f"Epoch: {self.current_epoch + 1}/{self.config['num_epochs']} | "
                       f"Batch: {batch_idx + 1}/{num_batches} | "
                       f"Loss: {avg_loss:.4f} | "
                       f"LR: {lr:.6f} | "
@@ -155,7 +165,7 @@ class Trainer:
             
             # Limit batches per epoch if specified
             if 'max_batches_per_epoch' in self.config and (batch_idx + 1) >= self.config['max_batches_per_epoch']:
-                print(f"Reached max batches per epoch ({self.config['max_batches_per_epoch']}). Stopping epoch.")
+                self.log(f"Reached max batches per epoch ({self.config['max_batches_per_epoch']}). Stopping epoch.")
                 break
         
         avg_loss = total_loss / num_batches
@@ -191,7 +201,8 @@ class Trainer:
         }
         
         torch.save(checkpoint, filepath)
-        print(f"Checkpoint saved to {filepath}")
+        torch.save(checkpoint, filepath)
+        self.log(f"Checkpoint saved to {filepath}")
         
         if is_best:
             best_path = os.path.join(
@@ -199,7 +210,8 @@ class Trainer:
                 'best_model.pt'
             )
             torch.save(checkpoint, best_path)
-            print(f"Best model saved to {best_path}")
+            torch.save(checkpoint, best_path)
+            self.log(f"Best model saved to {best_path}")
     
     def load_checkpoint(self, filepath):
         """Load model checkpoint"""
@@ -217,16 +229,17 @@ class Trainer:
     
     def train(self):
         """Main training loop"""
-        print("\n" + "=" * 70)
-        print("Starting Training")
-        print("=" * 70)
-        print(f"Device: {self.device}")
-        print(f"Training samples: {len(self.train_dataset):,}")
-        print(f"Validation samples: {len(self.val_dataset):,}")
-        print(f"Batch size: {self.config['batch_size']}")
-        print(f"Number of epochs: {self.config['num_epochs']}")
-        print(f"Initial learning rate: {self.config['learning_rate']}")
-        print("=" * 70 + "\n")
+        self.log("\n" + "=" * 70)
+        self.log("Starting Training")
+        self.log("=" * 70)
+        self.log(f"Device: {self.device}")
+        self.log(f"Training samples: {len(self.train_dataset):,}")
+        self.log(f"Validation samples: {len(self.val_dataset):,}")
+        self.log(f"Batch size: {self.config['batch_size']}")
+        self.log(f"Number of epochs: {self.config['num_epochs']}")
+        self.log(f"Initial learning rate: {self.config['learning_rate']}")
+        self.log(f"Mixed Precision: {self.config.get('use_amp', False)}")
+        self.log("=" * 70 + "\n")
         
         for epoch in range(self.config['num_epochs']):
             self.current_epoch = epoch
@@ -241,11 +254,11 @@ class Trainer:
             self.scheduler.step()
             
             # Print epoch summary
-            print("\n" + "-" * 70)
-            print(f"Epoch {epoch + 1}/{self.config['num_epochs']} Summary:")
-            print(f"  Train Loss: {train_loss:.4f}")
-            print(f"  Val Loss:   {val_loss:.4f}")
-            print("-" * 70 + "\n")
+            self.log("\n" + "-" * 70)
+            self.log(f"Epoch {epoch + 1}/{self.config['num_epochs']} Summary:")
+            self.log(f"  Train Loss: {train_loss:.4f}")
+            self.log(f"  Val Loss:   {val_loss:.4f}")
+            self.log("-" * 70 + "\n")
             
             # Save checkpoint
             checkpoint_path = os.path.join(
@@ -259,10 +272,10 @@ class Trainer:
             
             self.save_checkpoint(checkpoint_path, is_best=is_best)
         
-        print("\n" + "=" * 70)
-        print("Training Complete!")
-        print(f"Best validation loss: {self.best_val_loss:.4f}")
-        print("=" * 70)
+        self.log("\n" + "=" * 70)
+        self.log("Training Complete!")
+        self.log(f"Best validation loss: {self.best_val_loss:.4f}")
+        self.log("=" * 70)
 
 
 def load_data(data_path, train_split=0.9):
