@@ -11,6 +11,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from tqdm import tqdm
 
 from model import create_model
 from tokenizer import CharTokenizer
@@ -127,7 +128,16 @@ class Trainer:
         
         start_time = time.time()
         
-        for batch_idx, (inputs, targets) in enumerate(self.train_loader):
+        # Create progress bar
+        pbar = tqdm(
+            enumerate(self.train_loader),
+            total=num_batches,
+            desc=f"Epoch {self.current_epoch + 1}/{self.config['num_epochs']} [Train]",
+            ncols=120,
+            bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}] {postfix}'
+        )
+        
+        for batch_idx, (inputs, targets) in pbar:
             # Move to device
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
@@ -150,13 +160,19 @@ class Trainer:
             # Update metrics
             total_loss += loss.item()
             self.global_step += 1
+            avg_loss = total_loss / (batch_idx + 1)
             
-            # Print progress
+            # Update progress bar
+            lr = self.optimizer.param_groups[0]['lr']
+            pbar.set_postfix({
+                'loss': f'{loss.item():.4f}',
+                'avg_loss': f'{avg_loss:.4f}',
+                'lr': f'{lr:.6f}'
+            })
+            
+            # Log to file at intervals
             if (batch_idx + 1) % self.config['log_interval'] == 0:
-                avg_loss = total_loss / (batch_idx + 1)
                 elapsed = time.time() - start_time
-                lr = self.optimizer.param_groups[0]['lr']
-                
                 self.log(f"Epoch: {self.current_epoch + 1}/{self.config['num_epochs']} | "
                       f"Batch: {batch_idx + 1}/{num_batches} | "
                       f"Loss: {avg_loss:.4f} | "
@@ -166,8 +182,10 @@ class Trainer:
             # Limit batches per epoch if specified
             if 'max_batches_per_epoch' in self.config and (batch_idx + 1) >= self.config['max_batches_per_epoch']:
                 self.log(f"Reached max batches per epoch ({self.config['max_batches_per_epoch']}). Stopping epoch.")
+                pbar.close()
                 break
         
+        pbar.close()
         avg_loss = total_loss / num_batches
         return avg_loss
     
@@ -177,14 +195,39 @@ class Trainer:
         self.model.eval()
         total_loss = 0
         num_batches = len(self.val_loader)
+        if 'max_val_batches' in self.config:
+            num_batches = min(num_batches, self.config['max_val_batches'])
         
-        for inputs, targets in self.val_loader:
+        # Create progress bar
+        pbar = tqdm(
+            enumerate(self.val_loader),
+            total=num_batches,
+            desc=f"Epoch {self.current_epoch + 1}/{self.config['num_epochs']} [Val]",
+            ncols=120,
+            bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}] {postfix}'
+        )
+        
+        for batch_idx, (inputs, targets) in pbar:
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
             
             loss, _ = self.model(inputs, targets)
             total_loss += loss.item()
+            avg_loss = total_loss / (batch_idx + 1)
+            
+            # Update progress bar
+            pbar.set_postfix({
+                'loss': f'{loss.item():.4f}',
+                'avg_loss': f'{avg_loss:.4f}'
+            })
+            
+            # Limit validation batches if specified
+            if 'max_val_batches' in self.config and (batch_idx + 1) >= self.config['max_val_batches']:
+                self.log(f"Reached max validation batches ({self.config['max_val_batches']}). Stopping validation.")
+                pbar.close()
+                break
         
+        pbar.close()
         avg_loss = total_loss / num_batches
         return avg_loss
     
@@ -244,33 +287,42 @@ class Trainer:
         for epoch in range(self.config['num_epochs']):
             self.current_epoch = epoch
             
-            # Train for one epoch
             train_loss = self.train_epoch()
             
-            # Validate
+            checkpoint_path = os.path.join(
+                self.config['checkpoint_dir'],
+                f'checkpoint_epoch_{epoch + 1}.pt'
+            )
+            self.save_checkpoint(checkpoint_path, is_best=False)
+            
             val_loss = self.validate()
             
-            # Update learning rate
             self.scheduler.step()
             
-            # Print epoch summary
             self.log("\n" + "-" * 70)
             self.log(f"Epoch {epoch + 1}/{self.config['num_epochs']} Summary:")
             self.log(f"  Train Loss: {train_loss:.4f}")
             self.log(f"  Val Loss:   {val_loss:.4f}")
             self.log("-" * 70 + "\n")
             
-            # Save checkpoint
-            checkpoint_path = os.path.join(
-                self.config['checkpoint_dir'],
-                f'checkpoint_epoch_{epoch + 1}.pt'
-            )
-            
             is_best = val_loss < self.best_val_loss
             if is_best:
                 self.best_val_loss = val_loss
-            
-            self.save_checkpoint(checkpoint_path, is_best=is_best)
+                best_path = os.path.join(
+                    self.config['checkpoint_dir'],
+                    'best_model.pt'
+                )
+                checkpoint = {
+                    'epoch': self.current_epoch,
+                    'global_step': self.global_step,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    'scheduler_state_dict': self.scheduler.state_dict(),
+                    'best_val_loss': self.best_val_loss,
+                    'config': self.config
+                }
+                torch.save(checkpoint, best_path)
+                self.log(f"Best model saved to {best_path}")
         
         self.log("\n" + "=" * 70)
         self.log("Training Complete!")
@@ -325,6 +377,7 @@ def main():
         'weight_decay': 0.01,
         'grad_clip': 1.0,
         'max_batches_per_epoch': 130_000,
+        'max_val_batches': 10_000,  # Limit validation to ~10k batches (few hours instead of days)
         
         # Data
         'block_size': 128,  # Context window
