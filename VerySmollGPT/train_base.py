@@ -32,17 +32,13 @@ class TextDataset(Dataset):
         self.block_size = block_size
     
     def __len__(self):
-        # Number of possible windows
         return len(self.data) - self.block_size
     
     def __getitem__(self, idx):
-        # Get a chunk of data
         chunk = self.data[idx:idx + self.block_size + 1]
         
-        # Input is all tokens except the last
         x = torch.tensor(chunk[:-1], dtype=torch.long)
         
-        # Target is all tokens except the first (shifted by 1)
         y = torch.tensor(chunk[1:], dtype=torch.long)
         
         return x, y
@@ -64,11 +60,9 @@ class Trainer:
         self.val_dataset = val_dataset
         self.config = config
         
-        # Setup device
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model.to(self.device)
         
-        # Setup optimizer
         self.optimizer = AdamW(
             self.model.parameters(),
             lr=config['learning_rate'],
@@ -76,14 +70,12 @@ class Trainer:
             weight_decay=config['weight_decay']
         )
         
-        # Setup learning rate scheduler (cosine decay)
         self.scheduler = CosineAnnealingLR(
             self.optimizer,
             T_max=config['num_epochs'],
             eta_min=config['min_learning_rate']
         )
         
-        # Create data loaders
         self.train_loader = DataLoader(
             train_dataset,
             batch_size=config['batch_size'],
@@ -100,15 +92,12 @@ class Trainer:
             pin_memory=True
         )
         
-        # Training state
         self.current_epoch = 0
         self.global_step = 0
         self.best_val_loss = float('inf')
         
-        # Create checkpoint directory
         os.makedirs(config['checkpoint_dir'], exist_ok=True)
         
-        # Setup logging
         self.log_file = os.path.join(config['checkpoint_dir'], 'training_log.txt')
         self.log(f"Logging to {self.log_file}")
         
@@ -128,7 +117,6 @@ class Trainer:
         
         start_time = time.time()
         
-        # Create progress bar
         pbar = tqdm(
             enumerate(self.train_loader),
             total=num_batches,
@@ -138,18 +126,14 @@ class Trainer:
         )
         
         for batch_idx, (inputs, targets) in pbar:
-            # Move to device
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
             
-            # Forward pass
             loss, _ = self.model(inputs, targets)
             
-            # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
             
-            # Gradient clipping
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 self.config['grad_clip']
@@ -157,12 +141,10 @@ class Trainer:
             
             self.optimizer.step()
             
-            # Update metrics
             total_loss += loss.item()
             self.global_step += 1
             avg_loss = total_loss / (batch_idx + 1)
             
-            # Update progress bar
             lr = self.optimizer.param_groups[0]['lr']
             pbar.set_postfix({
                 'loss': f'{loss.item():.4f}',
@@ -170,7 +152,6 @@ class Trainer:
                 'lr': f'{lr:.6f}'
             })
             
-            # Log to file at intervals
             if (batch_idx + 1) % self.config['log_interval'] == 0:
                 elapsed = time.time() - start_time
                 self.log(f"Epoch: {self.current_epoch + 1}/{self.config['num_epochs']} | "
@@ -179,7 +160,6 @@ class Trainer:
                       f"LR: {lr:.6f} | "
                       f"Time: {elapsed:.1f}s")
             
-            # Limit batches per epoch if specified
             if 'max_batches_per_epoch' in self.config and (batch_idx + 1) >= self.config['max_batches_per_epoch']:
                 self.log(f"Reached max batches per epoch ({self.config['max_batches_per_epoch']}). Stopping epoch.")
                 pbar.close()
@@ -198,7 +178,6 @@ class Trainer:
         if 'max_val_batches' in self.config:
             num_batches = min(num_batches, self.config['max_val_batches'])
         
-        # Create progress bar
         pbar = tqdm(
             enumerate(self.val_loader),
             total=num_batches,
@@ -215,13 +194,11 @@ class Trainer:
             total_loss += loss.item()
             avg_loss = total_loss / (batch_idx + 1)
             
-            # Update progress bar
             pbar.set_postfix({
                 'loss': f'{loss.item():.4f}',
                 'avg_loss': f'{avg_loss:.4f}'
             })
             
-            # Limit validation batches if specified
             if 'max_val_batches' in self.config and (batch_idx + 1) >= self.config['max_val_batches']:
                 self.log(f"Reached max validation batches ({self.config['max_val_batches']}). Stopping validation.")
                 pbar.close()
@@ -263,7 +240,7 @@ class Trainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        self.current_epoch = checkpoint['epoch']
+        self.current_epoch = checkpoint['epoch'] + 1 
         self.global_step = checkpoint['global_step']
         self.best_val_loss = checkpoint['best_val_loss']
         
@@ -284,7 +261,8 @@ class Trainer:
         self.log(f"Mixed Precision: {self.config.get('use_amp', False)}")
         self.log("=" * 70 + "\n")
         
-        for epoch in range(self.config['num_epochs']):
+        start_epoch = self.current_epoch
+        for epoch in range(start_epoch, self.config['num_epochs']):
             self.current_epoch = epoch
             
             train_loss = self.train_epoch()
@@ -369,18 +347,15 @@ def find_latest_checkpoint(checkpoint_dir):
     if not os.path.exists(checkpoint_dir):
         return None
     
-    # Find all checkpoint files matching the pattern checkpoint_epoch_*.pt
     import glob
     checkpoint_files = glob.glob(os.path.join(checkpoint_dir, 'checkpoint_epoch_*.pt'))
     
     if not checkpoint_files:
         return None
     
-    # Extract epoch numbers and find the latest
     epoch_numbers = []
     for ckpt in checkpoint_files:
         try:
-            # Extract epoch number from filename like 'checkpoint_epoch_1.pt'
             basename = os.path.basename(ckpt)
             epoch_str = basename.replace('checkpoint_epoch_', '').replace('.pt', '')
             epoch_numbers.append((int(epoch_str), ckpt))
@@ -390,7 +365,6 @@ def find_latest_checkpoint(checkpoint_dir):
     if not epoch_numbers:
         return None
     
-    # Sort by epoch number and return the latest
     epoch_numbers.sort(key=lambda x: x[0], reverse=True)
     return epoch_numbers[0][1]
 
@@ -398,7 +372,6 @@ def find_latest_checkpoint(checkpoint_dir):
 def main():
     """Main training function"""
     
-    # Configuration
     config = {
         'vocab_size': 102,  
         'd_model': 256,      
@@ -408,7 +381,7 @@ def main():
         'max_seq_len': 128,
         'dropout': 0.1,
         
-        # Training
+        
         'num_epochs': 3,
         'batch_size': 16,   
         'learning_rate': 3e-4,
@@ -416,35 +389,28 @@ def main():
         'weight_decay': 0.01,
         'grad_clip': 1.0,
         'max_batches_per_epoch': 130_000,
-        'max_val_batches': 10_000,  # Limit validation to ~10k batches (few hours instead of days)
+        'max_val_batches': 10_000, 
         
-        # Data
-        'block_size': 128,  # Context window
+        'block_size': 128, 
         'train_split': 0.9,
         
-        # Logging
         'log_interval': 100,
         'checkpoint_dir': 'checkpoints',
         
-        # System
         'num_workers': 2,
     }
     
-    # Paths
     data_path = "Data/tokenized_data.npy"
     tokenizer_path = "Data/tokenizer"
     
-    # Load tokenizer to verify vocab size
     print("Loading tokenizer...")
     tokenizer = CharTokenizer()
     tokenizer.load(tokenizer_path)
     config['vocab_size'] = tokenizer.vocab_size
     print(f"Vocabulary size: {config['vocab_size']}")
     
-    # Load data
     train_data, val_data = load_data(data_path, config['train_split'])
     
-    # Create datasets
     print("\nCreating datasets...")
     train_dataset = TextDataset(train_data, config['block_size'])
     val_dataset = TextDataset(val_data, config['block_size'])
@@ -452,8 +418,6 @@ def main():
     print(f"Training samples: {len(train_dataset):,}")
     print(f"Validation samples: {len(val_dataset):,}")
     
-    # Create model
-    print("\nCreating model...")
     print("\nCreating model...")
     model = create_model(
         vocab_size=config['vocab_size'],
@@ -465,10 +429,8 @@ def main():
         dropout=config['dropout']
     )
     
-    # Create trainer
     trainer = Trainer(model, train_dataset, val_dataset, config)
     
-    # Check for existing checkpoint and resume if found
     latest_checkpoint = find_latest_checkpoint(config['checkpoint_dir'])
     if latest_checkpoint:
         print(f"\n{'='*70}")
@@ -477,7 +439,6 @@ def main():
         print(f"{'='*70}\n")
         trainer.load_checkpoint(latest_checkpoint)
     
-    # Train
     trainer.train()
     
     print("\n✓ Training completed successfully!")
