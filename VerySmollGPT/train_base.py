@@ -356,6 +356,45 @@ def load_data(data_path, train_split=0.9):
     return train_data, val_data
 
 
+def find_latest_checkpoint(checkpoint_dir):
+    """
+    Find the latest checkpoint file in the checkpoint directory
+    
+    Args:
+        checkpoint_dir: directory containing checkpoints
+    
+    Returns:
+        path to latest checkpoint or None if no checkpoints found
+    """
+    if not os.path.exists(checkpoint_dir):
+        return None
+    
+    # Find all checkpoint files matching the pattern checkpoint_epoch_*.pt
+    import glob
+    checkpoint_files = glob.glob(os.path.join(checkpoint_dir, 'checkpoint_epoch_*.pt'))
+    
+    if not checkpoint_files:
+        return None
+    
+    # Extract epoch numbers and find the latest
+    epoch_numbers = []
+    for ckpt in checkpoint_files:
+        try:
+            # Extract epoch number from filename like 'checkpoint_epoch_1.pt'
+            basename = os.path.basename(ckpt)
+            epoch_str = basename.replace('checkpoint_epoch_', '').replace('.pt', '')
+            epoch_numbers.append((int(epoch_str), ckpt))
+        except ValueError:
+            continue
+    
+    if not epoch_numbers:
+        return None
+    
+    # Sort by epoch number and return the latest
+    epoch_numbers.sort(key=lambda x: x[0], reverse=True)
+    return epoch_numbers[0][1]
+
+
 def main():
     """Main training function"""
     
@@ -428,6 +467,15 @@ def main():
     
     # Create trainer
     trainer = Trainer(model, train_dataset, val_dataset, config)
+    
+    # Check for existing checkpoint and resume if found
+    latest_checkpoint = find_latest_checkpoint(config['checkpoint_dir'])
+    if latest_checkpoint:
+        print(f"\n{'='*70}")
+        print(f"Found existing checkpoint: {latest_checkpoint}")
+        print(f"Resuming training...")
+        print(f"{'='*70}\n")
+        trainer.load_checkpoint(latest_checkpoint)
     
     # Train
     trainer.train()
